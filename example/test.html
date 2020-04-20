@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+</head>
+
+<body>
+    <div style="display: none" id="messageBox">
+        <h5 id="myUUID"></h5>
+        reciever: <input type="text" id="id">
+        <br><br>
+
+        <textarea name="" id="message" cols="30" rows="10"></textarea>
+        <br><br>
+
+        <button id="btn">Emit to server</button>
+    </div>
+
+    <div id="initBox">
+        <h5 id="myID"></h5>
+        username: <input type="text" id="username">
+        <br><br>
+
+        <button id="bindBtn">bind</button>
+    </div>
+
+</body>
+
+</html>
+<script src="https://code.jquery.com/jquery-3.4.1.min.js"
+    integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.2.0/socket.io.js"></script>
+<script>
+    $(document).ready(
+        () => {
+            let sockID, my_uuid;
+
+            // init socket io
+            const socket = io('http://192.168.100.3:3001');
+
+            // Socket events
+            // --------------
+
+            socket.on('connect', (message) => {
+                console.log('Client connected successfully');
+            });
+
+            socket.on('bound', (message) => {
+                const response = JSON.parse(message);
+
+                if (response.status === 'success') {
+                    // hide init box
+                    $('#initBox').css({ "display": "none" });
+                    $('#messageBox').css({ "display": "block" });
+                    $('#myUUID').html(my_uuid);
+                } else {
+                    $('#myID').html(JSON.parse(message).data.message);
+                }
+            });
+
+            socket.on('message', (message) => {
+                console.log('Message: ', message);
+
+                // send acknowlegement
+                ackknowlegement(message);
+            });
+
+            socket.on('ack', (message) => {
+                console.log('Ack: ', message);
+            });
+
+            socket.on('messageError', (message) => {
+                console.log(message);
+            });
+
+            // Button events
+            //---------------
+
+            $('#bindBtn').on('click', () => {
+                my_uuid = $('#username').val();
+                socket.emit('bind', JSON.stringify({
+                    uuid: my_uuid
+                }));
+            });
+
+            $('#btn').on('click', () => {
+                const idVal = $('#id').val();
+                const message = $('#message').val();
+
+                socket.emit('message', JSON.stringify(
+                    {
+                        intent: 'p2p-message',
+                        body:
+                        {
+                            message_id: uniqid(),
+                            sender_uuid: my_uuid,
+                            reciever_uuid: idVal,
+                            message: message
+                        }
+                    })
+                );
+            });
+
+            // Helper functions
+            //------------------
+
+            const ackknowlegement = (message) => {
+                const decodedMessage = JSON.parse(message);
+
+                // send ackknowlegement
+                socket.emit('message', JSON.stringify(
+                    {
+                        intent: 'p2p-ack',
+                        body:
+                        {
+                            message_id: decodedMessage.message_id,
+                            sender_uuid: decodedMessage.reciever_uuid,
+                            reciever_uuid: decodedMessage.sender_uuid,
+                            message: null
+                        }
+                    })
+                );
+            }
+
+            const uniqid = function () {
+                const id = '_' + Math.random().toString(36).substr(2, 9)
+                return btoa(id);
+            };
+        }
+    )
+</script>

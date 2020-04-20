@@ -1,0 +1,21 @@
+{
+  "name": "messaging-socket",
+  "version": "1.0.0",
+  "description": "This handles in application communication",
+  "main": "app.js",
+  "scripts": {
+    "start-daemon": "pm2 start --name messaging-socket ./app.js",
+    "stop-daemon": "pm2 delete messaging-socket",
+    "restart-daemon": "pm2 restart messaging-socket",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "socket"
+  ],
+  "author": "mayfairtechnologiesgh@gmail.com",
+  "license": "ISC",
+  "dependencies": {
+    "mftl-services-sdk": "^1.3.9",
+    "socket.io": "^2.2.0"
+  }
+}
